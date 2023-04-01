@@ -150,7 +150,7 @@ class BaseTrainer():
     def evaluate(self, loader, epoch=1, stage='val'):
         all_preds, all_labels = [], []
         self.losses.reset()
-        
+
         with tqdm(loader) as pbar:
             for (sents, _, _, labels) in pbar:
                 sents = move_to_cuda(sents)
@@ -162,8 +162,8 @@ class BaseTrainer():
                     preds = self._model(sents)
                     all_preds.append(preds.argmax(-1))
                     all_labels.append(labels)
-                pbar.set_description('{}ing'.format('validat' if stage=='val' else 'test'))
-        
+                pbar.set_description(f"{'validat' if stage == 'val' else 'test'}ing")
+
         all_preds = torch.cat(all_preds).detach().cpu().numpy()
         all_labels = torch.cat(all_labels).detach().cpu().numpy()
         f1_eval = f1_score(all_labels, all_preds, average='macro')
@@ -180,25 +180,30 @@ class BaseTrainer():
             self.train(self.loaders['train_loader_l'], self.loaders['train_loader_u'], epoch)
             # eval
             f1_macro, f1_micro = self.evaluate(self.loaders['dev_loader'], epoch)
-            self.logger.info('********Dev results: Acc (MI-F1)={}*********'.format(f1_micro))
+            self.logger.info(f'********Dev results: Acc (MI-F1)={f1_micro}*********')
             if f1_micro > best_dev_f1:
                 patience = self.patience
                 self.logger.info('find new best model!')
                 best_dev_f1 = f1_micro
                 f1_macro, f1_micro = self.evaluate(self.loaders['test_loader'], epoch)
-                self.logger.info('********Test results: F1 (MA)={}, Acc (MI-F1)={}*********'.format(f1_macro, f1_micro))
+                self.logger.info(
+                    f'********Test results: F1 (MA)={f1_macro}, Acc (MI-F1)={f1_micro}*********'
+                )
                 if f1_micro > best_test_acc:
                     best_test_acc = f1_micro
                     best_test_f1 = f1_macro
             else:
                 patience -= 1
                 if patience == 0 or epoch == self.config.num_epoch - 1:
-                    self.logger.info('No patience, best f1 is {}'.format(best_test_f1))
+                    self.logger.info(f'No patience, best f1 is {best_test_f1}')
                     break
-        self.logger.info('NUM_LABELD={}: lr={}, lr_bert={}, thr={}, lbd={}, mu={}: best_acc={}, best_MAF1={}\n'.format(self.config.num_labeled, self.config.lr_main, self.config.lr_bert, self.config.thr, self.config.lbd, self.config.mu, best_test_acc, best_test_f1))
-        f = open('results_{}.txt'.format(self.config.dataset), 'a')
-        f.write('NUM_LABELD={}: lr={}, lr_bert={}, thr={}, lbd={}, mu={}: best_MAF1={}, best_acc={}, best_f1={}\n'.format(self.config.num_labeled, self.config.lr_main, self.config.lr_bert, self.config.thr, self.config.lbd, self.config.mu, best_test_f1, best_test_acc, best_test_f1))
-        f.close()
+        self.logger.info(
+            f'NUM_LABELD={self.config.num_labeled}: lr={self.config.lr_main}, lr_bert={self.config.lr_bert}, thr={self.config.thr}, lbd={self.config.lbd}, mu={self.config.mu}: best_acc={best_test_acc}, best_MAF1={best_test_f1}\n'
+        )
+        with open(f'results_{self.config.dataset}.txt', 'a') as f:
+            f.write(
+                f'NUM_LABELD={self.config.num_labeled}: lr={self.config.lr_main}, lr_bert={self.config.lr_bert}, thr={self.config.thr}, lbd={self.config.lbd}, mu={self.config.mu}: best_MAF1={best_test_f1}, best_acc={best_test_acc}, best_f1={best_test_f1}\n'
+            )
         exit()
 
     def run_base(self):
@@ -210,19 +215,21 @@ class BaseTrainer():
             self.train_base(self.loaders['train_loader_l'], self.loaders['train_loader_u'], epoch)
             # eval
             f1_macro, f1_micro = self.evaluate(self.loaders['dev_loader'], epoch)
-            self.logger.info('validating result (micro-f1):{}'.format(f1_micro))
+            self.logger.info(f'validating result (micro-f1):{f1_micro}')
             if f1_micro > best_dev_f1:
                 patience = self.patience
                 best_dev_f1 = f1_micro
                 self.logger.info('find new best model!')
                 f1_macro, f1_micro = self.evaluate(self.loaders['test_loader'], epoch, stage='test')
-                self.logger.info('********Test results: Acc={}, F1={}************'.format(f1_micro, f1_macro))
+                self.logger.info(
+                    f'********Test results: Acc={f1_micro}, F1={f1_macro}************'
+                )
                 if f1_micro > best_test_f1:
                     best_test_f1 = f1_micro
             else:
                 patience -= 1
                 if patience == 0 or epoch == self.config.num_epoch - 1:
-                    self.logger.info('No patience, best f1 is {}'.format(best_test_f1))
+                    self.logger.info(f'No patience, best f1 is {best_test_f1}')
                     exit()
 
 class ClfTrainer(BaseTrainer):
@@ -337,7 +344,7 @@ class ClfTrainer(BaseTrainer):
     def evaluate(self, loader, epoch=1, stage='val'):
         all_preds, all_labels = [], []
         self.losses.reset()
-        
+
         with tqdm(loader) as pbar:
             for (sents, _, _, labels) in pbar:
                 sents = move_to_cuda(sents)
@@ -349,8 +356,8 @@ class ClfTrainer(BaseTrainer):
                     preds, _ = self._model(sents)
                     all_preds.append(preds.argmax(-1))
                     all_labels.append(labels)
-                pbar.set_description('{}ing'.format('validat' if stage=='val' else 'test'))
-        
+                pbar.set_description(f"{'validat' if stage == 'val' else 'test'}ing")
+
         all_preds = torch.cat(all_preds).detach().cpu().numpy()
         all_labels = torch.cat(all_labels).detach().cpu().numpy()
         f1_eval = f1_score(all_labels, all_preds, average='macro')
@@ -367,25 +374,30 @@ class ClfTrainer(BaseTrainer):
             self.train(self.loaders['train_loader_l'], self.loaders['train_loader_u'], epoch)
             # eval
             f1_macro, f1_micro = self.evaluate(self.loaders['dev_loader'], epoch)
-            self.logger.info('********Dev results: Acc (MI-F1)={}*********'.format(f1_micro))
+            self.logger.info(f'********Dev results: Acc (MI-F1)={f1_micro}*********')
             if f1_micro > best_dev_f1:
                 patience = self.patience
                 self.logger.info('find new best model!')
                 best_dev_f1 = f1_micro
                 f1_macro, f1_micro = self.evaluate(self.loaders['test_loader'], epoch)
-                self.logger.info('********Test results: Acc (MI-F1)={}, F1 (MA)={}*********'.format(f1_micro, f1_macro))
+                self.logger.info(
+                    f'********Test results: Acc (MI-F1)={f1_micro}, F1 (MA)={f1_macro}*********'
+                )
                 if f1_micro > best_test_acc:
                     best_test_acc = f1_micro
                     best_test_f1 = f1_macro
             else:
                 patience -= 1
                 if patience == 0 or epoch == self.config.num_epoch - 1:
-                    self.logger.info('No patience, best f1 is {}'.format(best_test_f1))
+                    self.logger.info(f'No patience, best f1 is {best_test_f1}')
                     break
-        self.logger.info('NUM_LABELD={}: lr={}, lr_bert={}, thr={}, lbd={}, mu={}: best_acc={}, best_MAF1={}\n'.format(self.config.num_labeled, self.config.lr_main, self.config.lr_bert, self.config.thr, self.config.lbd, self.config.mu, best_test_acc, best_test_f1))
-        f = open('results_{}.txt'.format(self.config.dataset), 'a')
-        f.write('NUM_LABELD={}: lr={}, lr_bert={}, thr={}, lbd={}, mu={}: best_acc={}, best_f1={}\n'.format(self.config.num_labeled, self.config.lr_main, self.config.lr_bert, self.config.thr, self.config.lbd, self.config.mu, best_test_acc, best_test_f1))
-        f.close()
+        self.logger.info(
+            f'NUM_LABELD={self.config.num_labeled}: lr={self.config.lr_main}, lr_bert={self.config.lr_bert}, thr={self.config.thr}, lbd={self.config.lbd}, mu={self.config.mu}: best_acc={best_test_acc}, best_MAF1={best_test_f1}\n'
+        )
+        with open(f'results_{self.config.dataset}.txt', 'a') as f:
+            f.write(
+                f'NUM_LABELD={self.config.num_labeled}: lr={self.config.lr_main}, lr_bert={self.config.lr_bert}, thr={self.config.thr}, lbd={self.config.lbd}, mu={self.config.mu}: best_acc={best_test_acc}, best_f1={best_test_f1}\n'
+            )
         exit()
 
 class SimTrainer(BaseTrainer):
@@ -522,7 +534,7 @@ class SimTrainer(BaseTrainer):
     def evaluate(self, loader, epoch=1, stage='val'):
         all_preds, all_labels = [], []
         self.losses.reset()
-        
+
         with tqdm(loader) as pbar:
             for (sents, _, _, labels) in pbar:
                 sents = move_to_cuda(sents)
@@ -534,8 +546,8 @@ class SimTrainer(BaseTrainer):
                     preds, _ = self._model(sents)
                     all_preds.append(preds.argmax(-1))
                     all_labels.append(labels)
-                pbar.set_description('{}ing'.format('validat' if stage=='val' else 'test'))
-        
+                pbar.set_description(f"{'validat' if stage == 'val' else 'test'}ing")
+
         all_preds = torch.cat(all_preds).detach().cpu().numpy()
         all_labels = torch.cat(all_labels).detach().cpu().numpy()
         f1_eval = f1_score(all_labels, all_preds, average='macro')
@@ -552,23 +564,28 @@ class SimTrainer(BaseTrainer):
             self.train(self.loaders['train_loader_l'], self.loaders['train_loader_u'], epoch)
             # eval
             f1_macro, f1_micro = self.evaluate(self.loaders['dev_loader'], epoch)
-            self.logger.info('********Dev results: Acc (MI-F1)={}*********'.format(f1_micro))
+            self.logger.info(f'********Dev results: Acc (MI-F1)={f1_micro}*********')
             if f1_micro > best_dev_f1:
                 patience = self.patience
                 self.logger.info('find new best model!')
                 best_dev_f1 = f1_micro
                 f1_macro, f1_micro = self.evaluate(self.loaders['test_loader'], epoch, stage='test')
-                self.logger.info('********Test results: Acc (MI-F1)={}, F1 (MA)={}***********'.format(f1_micro, f1_macro))
+                self.logger.info(
+                    f'********Test results: Acc (MI-F1)={f1_micro}, F1 (MA)={f1_macro}***********'
+                )
                 if f1_micro > best_test_acc:
                     best_test_acc = f1_micro
                     best_test_f1 = f1_macro
             else:
                 patience -= 1
                 if patience == 0 or epoch == self.config.num_epoch - 1:
-                    self.logger.info('No patience, best f1 is {}'.format(best_test_f1))
+                    self.logger.info(f'No patience, best f1 is {best_test_f1}')
                     break
-        self.logger.info('NUM_LABELD={}: aug={}, lr={}, lr_bert={}, thr={}, lbd={}, mu={}: best_acc={}, best_MAF1={}\n'.format(self.config.num_labeled, self.config.aug_metric, self.config.lr_main, self.config.lr_bert, self.config.thr, self.config.lbd, self.config.mu, best_test_acc, best_test_f1))
-        f = open('results_{}.txt'.format(self.config.dataset), 'a')
-        f.write('NUM_LABELD={}: aug={}, lr={}, lr_bert={}, thr={}, lbd={}, mu={}: best_acc={}, best_MAF1={}\n'.format(self.config.num_labeled, self.config.aug_metric, self.config.lr_main, self.config.lr_bert, self.config.thr, self.config.lbd, self.config.mu, best_test_acc, best_test_f1))
-        f.close()
+        self.logger.info(
+            f'NUM_LABELD={self.config.num_labeled}: aug={self.config.aug_metric}, lr={self.config.lr_main}, lr_bert={self.config.lr_bert}, thr={self.config.thr}, lbd={self.config.lbd}, mu={self.config.mu}: best_acc={best_test_acc}, best_MAF1={best_test_f1}\n'
+        )
+        with open(f'results_{self.config.dataset}.txt', 'a') as f:
+            f.write(
+                f'NUM_LABELD={self.config.num_labeled}: aug={self.config.aug_metric}, lr={self.config.lr_main}, lr_bert={self.config.lr_bert}, thr={self.config.thr}, lbd={self.config.lbd}, mu={self.config.mu}: best_acc={best_test_acc}, best_MAF1={best_test_f1}\n'
+            )
         exit()

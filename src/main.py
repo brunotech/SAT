@@ -25,7 +25,7 @@ def main():
     parser.add_argument('--num_augs', type=int, default=2, help='the number of augmentation methods used in a single run')
     parser.add_argument('--hidden_size', type=int, default=128, help='the linear hidden dimension in the classifier on the top of bert')
     parser.add_argument('--scorer_hidden_size', type=int, default=768, help='the linear hidden dimension in the classifier on the top of bert')
-    
+
     # task
     parser.add_argument('--task', type=str, default='semi')
     parser.add_argument('--aug_metric', type=str, default='base', choices=['base', 'sim'])
@@ -44,9 +44,9 @@ def main():
     parser.add_argument('--lr_main', type=float, default=1e-3, help='learning rate for the main task')
     parser.add_argument('--lr_bert', type=float, default=1e-5, help='learning rate for the bert model')
     parser.add_argument('--lr_aux', type=float, default=1e-4, help='learning rate for the auxiliary task')
-    
+
     config = parser.parse_args()
-    
+
     train_loader_l, train_loader_u, dev_loader, test_loader, num_class = get_dataloader(os.path.join('../data', config.dataset), config.num_labeled, config.mu, config.task)
     loaders = {
         'train_loader_l': train_loader_l,
@@ -54,17 +54,14 @@ def main():
         'dev_loader': dev_loader, 
         'test_loader': test_loader
     }
-    if config.dataset == 'imdb':
-        config.num_classes = 2
-    else:
-        config.num_classes = num_class
+    config.num_classes = 2 if config.dataset == 'imdb' else num_class
     set_seed(config)
-    
+
     if config.aug_metric == 'base':
         trainer = ClfTrainer(config, loaders)
     elif config.aug_metric == 'sim':
         trainer = SimTrainer(config, loaders)
-        
+
     if config.task == 'baseline':
         trainer.run_base()
     elif config.task == 'semi':
